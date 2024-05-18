@@ -4,21 +4,24 @@ from abc import ABC
 
 class Entity(ABC):
 
-    """#Корневой абстрактный класс для всех существ и объектов существующих в симуляции"""
+    """Корневой абстрактный класс для всех существ и объектов существующих в симуляции"""
 
     def __init__(self, x=0, y=0):
         self.x = x
         self.y = y
 
     def show(self):
+
+        """Выводит изображение класса на экран"""
+
         pass
 
 
 class Grass(Entity):
 
-    name = 'Трава'
+    """Класс ресурса для травоядных"""
 
-    """ресурс для травоядных"""
+    name = 'Трава'
 
     def show(self):
         return '🌸'
@@ -26,7 +29,7 @@ class Grass(Entity):
 
 class Rock(Entity):
 
-    """статичный объект"""
+    """Класс горы"""
 
     name = 'Гора'
 
@@ -36,7 +39,7 @@ class Rock(Entity):
 
 class Empty(Entity):
 
-    """пустой объект"""
+    """ Класс пустой клетки"""
 
     name = 'Пустая клетка'
 
@@ -46,7 +49,7 @@ class Empty(Entity):
 
 class Tree(Entity):
 
-    """статичный объект"""
+    """Класс дерева"""
 
     name = 'Дерево'
 
@@ -56,9 +59,7 @@ class Tree(Entity):
 
 class Creature(Entity):
 
-    """Абстрактный класс, наследуется от Entity. Существо, имеет скорость (сколько клеток может пройти за 1 ход),
-     количество HP. Имеет абстрактный метод make_move() - сделать ход.
-      Наследники будут реализовывать этот метод каждый по-своему"""
+    """Абстрактный класс для животных"""
 
     def __init__(self, x: int, y: int, hungry: int, hp: int) -> None:
         super().__init__(x, y)
@@ -66,17 +67,21 @@ class Creature(Entity):
         self.hp = hp
 
     def make_move(self, *args, **kwargs):
+
+        """Передвижение животного"""
+
         pass
 
-    def lost(self, world, logs):
-        world.clear_cell((self.x, self.y))
-        logs.append(f'{self} исчез')
+    def disappeared(self, world, logs):
+
+        """Исчезновение животного"""
+
+        pass
 
 
 class Herbivore(Creature):
-    """Травоядное, наследуется от Creature.
-    Стремятся найти ресурс (траву), может потратить свой ход
-    на движение в сторону травы, либо на её поглощение."""
+
+    """Класс травоядного"""
 
     name = 'Заяц'
 
@@ -88,25 +93,26 @@ class Herbivore(Creature):
         if self.hungry < 3:
             self.x, self.y = random.choice(world.find_entity_cells(Grass))
             self.hungry += 3
-            logs.append(f'Заяц с клетки {old_place} съел траву на клетке {self.x, self.y}')
+            logs.append(f'{self.name} с клетки {old_place} съел траву на клетке {self.x, self.y}')
 
         else:
             self.x, self.y = random.choice(world.find_entity_cells(Empty))
             self.hungry -= 1
-            logs.append(f'Заяц с клетки {old_place} перешел на клетку {self.x, self.y}')
+            logs.append(f'{self.name} с клетки {old_place} перешел на клетку {self.x, self.y}')
         world.clear_cell(old_place)
 
     def show(self):
         return '🐰'
 
+    def disappeared(self, world, logs):
+
+        world.clear_cell((self.x, self.y))
+        logs.append(f'{self.name} c клетки {self.x, self.y} исчез(hp стал равным 0)')
+
 
 class Predator(Creature):
 
-    """Хищник, наследуется от Creature. В дополнение к полям класса Creature, имеет силу атаки.
-    На что может потратить ход хищник:
-    Переместиться (чтобы приблизиться к жертве - травоядному)
-    Атаковать травоядное. При этом количество HP травоядного
-    уменьшается на силу атаки хищника. Если значение HP жертвы опускается до 0, травоядное исчезает"""
+    """Класс хищника"""
 
     name = 'Лиса'
 
@@ -117,24 +123,26 @@ class Predator(Creature):
 
     def make_move(self, world, logs):
         old_place = self.x, self.y
-        if self.hungry < 4:
+        if self.hungry < 3:
             self.x, self.y = random.choice((world.find_entity_cells(Herbivore)))
-            self.hungry += 4
-            logs.append(f'Лиса с клетки {old_place} съела зайца на клетке {self.x, self.y}')
+            self.hungry += 3
+            logs.append(f'{self.name} {old_place} съела зайца на клетке {self.x, self.y}')
 
         else:
             self.x, self.y = random.choice((world.find_entity_cells(Empty)))
             self.hungry -= 1
-            logs.append(f'Лиса с клетки {old_place} перешла на клетку {self.x, self.y}')
+            logs.append(f'{self.name} с клетки {old_place} перешла на клетку {self.x, self.y}')
         world.clear_cell(old_place)
-
 
     def show(self):
         return '🦊'
 
     def attack(self, world, logs):
+
+        """Укус травоядного(хищник кусает травоядное на всех соседних клетках)"""
+
         herbivore_cells = world.find_entity_cells(Herbivore)
         for x, y in herbivore_cells:
             if abs(self.x - x) <= 1 and abs(self.y - y) <= 1:
                 world.map[x, y].hp -= 1
-                logs.append(f'Уменьшилось здоровье зайца на клетке {x, y}')
+                logs.append(f'{world.map[x, y].name} на клетке {x, y} потерял 1 hp от здоровья')
