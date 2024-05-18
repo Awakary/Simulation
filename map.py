@@ -33,9 +33,12 @@ class Map:
 
         """Выводит карту на экран"""
 
-        [print(str(i).center(3), end=' ') for i in range(1, self.width + 1)]
+        [print(' '.ljust(2) + str(i).center(3)+"\t", end='') for i in range(1, self.width + 1)]
         print()
         for i in range(1, self.height+1):
             for j in range(1, self.width+1):
-                print(self.map[i, j].show() + "\t", end='')
-            print(i)
+                if j == 1:
+                    print(str(i).ljust(2), self.map[i, j].show() + "\t", end='', sep='')
+                else:
+                    print(' '.ljust(2), self.map[i, j].show() + "\t", end='', sep='')
+            print()
