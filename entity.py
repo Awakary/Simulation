@@ -59,18 +59,28 @@ class Tree(Entity):
 
 class Creature(Entity):
 
-    """Абстрактный класс для животных"""
+    """Родительский класс для животных"""
 
     def __init__(self, x: int, y: int, hungry: int, hp: int) -> None:
         super().__init__(x, y)
         self.hungry = hungry
         self.hp = hp
 
-    def make_move(self, *args, **kwargs):
+    def make_move(self, name, food, world, logs):
 
         """Передвижение животного"""
 
-        pass
+        old_place = self.x, self.y
+        if self.hungry < 3:
+            self.x, self.y = random.choice((world.find_entity_cells(food)))
+            self.hungry += 3
+            logs.append(f'{name} {old_place} съел(а) ресурс на клетке {self.x, self.y}')
+
+        else:
+            self.x, self.y = random.choice((world.find_entity_cells(Empty)))
+            self.hungry -= 1
+            logs.append(f'{name} с клетки {old_place} перешeл(шла) на клетку {self.x, self.y}')
+        world.clear_cell(old_place)
 
     def disappeared(self, world, logs):
 
@@ -84,28 +94,15 @@ class Herbivore(Creature):
     """Класс травоядного"""
 
     name = 'Заяц'
+    food = Grass
 
     def __init__(self, x: int, y: int, hungry: int = 5, hp: int = 3) -> None:
         super().__init__(x, y, hungry, hp)
-
-    def make_move(self, world, logs):
-        old_place = self.x, self.y
-        if self.hungry < 3:
-            self.x, self.y = random.choice(world.find_entity_cells(Grass))
-            self.hungry += 3
-            logs.append(f'{self.name} с клетки {old_place} съел траву на клетке {self.x, self.y}')
-
-        else:
-            self.x, self.y = random.choice(world.find_entity_cells(Empty))
-            self.hungry -= 1
-            logs.append(f'{self.name} с клетки {old_place} перешел на клетку {self.x, self.y}')
-        world.clear_cell(old_place)
 
     def show(self):
         return '🐰'
 
     def disappeared(self, world, logs):
-
         world.clear_cell((self.x, self.y))
         logs.append(f'{self.name} c клетки {self.x, self.y} исчез(hp стал равным 0)')
 
@@ -115,24 +112,12 @@ class Predator(Creature):
     """Класс хищника"""
 
     name = 'Лиса'
+    food = Herbivore
 
     def __init__(self, x: int, y: int, hungry: int = 5, hp: int = 3) -> None:
         super().__init__(x, y, hungry, hp)
         self.hungry = hungry
         self.hp = hp
-
-    def make_move(self, world, logs):
-        old_place = self.x, self.y
-        if self.hungry < 3:
-            self.x, self.y = random.choice((world.find_entity_cells(Herbivore)))
-            self.hungry += 3
-            logs.append(f'{self.name} {old_place} съела зайца на клетке {self.x, self.y}')
-
-        else:
-            self.x, self.y = random.choice((world.find_entity_cells(Empty)))
-            self.hungry -= 1
-            logs.append(f'{self.name} с клетки {old_place} перешла на клетку {self.x, self.y}')
-        world.clear_cell(old_place)
 
     def show(self):
         return '🦊'

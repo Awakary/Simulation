@@ -26,7 +26,7 @@ class Actions:
                 self.world.map[place] = choice(self.entities)(place[0], place[1])
 
         self.world.show_entities()
-        print('Карта мира сформирована')
+        print('Карта мира сформирована', '\n')
 
     def turn_actions(self):
 
@@ -35,14 +35,15 @@ class Actions:
         one_circle = []
         for animal in self.world.map.values():
             if isinstance(animal, (Herbivore, Predator)) and animal not in one_circle:
-                self.add_entities(self.world)
-                animal.make_move(self.world, self.logs)
-                one_circle.append(animal)
-                self.world.set_cell(animal)
-                if isinstance(animal, Predator):
-                    animal.attack(self.world, self.logs)
                 if animal.hp == 0:
                     animal.disappeared(self.world, self.logs)
+                else:
+                    self.add_entities(self.world)
+                    animal.make_move(animal.name, animal.food, self.world, self.logs)
+                    one_circle.append(animal)
+                    self.world.set_cell(animal)
+                    if isinstance(animal, Predator):
+                        animal.attack(self.world, self.logs)
 
     def add_entities(self, world):
 

@@ -23,6 +23,7 @@ class Simulation:
         self.count += 1
         self.render()
         print('Проведенное количество ходов - ', self.count)
+        print()
         self.actions.logs = []
         time.sleep(2)
 
