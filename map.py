@@ -1,3 +1,4 @@
+from cell import Empty
 from entity import *
 
 
@@ -10,35 +11,27 @@ class Map:
         self.height = height
         self.map = {(i, j): ' ' for i in range(1, height + 1) for j in range(1, width + 1)}
 
-    def set_cell(self, entity):
+    def set_object(self, object):
 
         """Устанавливает сущность на карту"""
 
-        self.map[entity.x, entity.y] = entity
+        self.map[object.x, object.y] = object
 
-    def clear_cell(self, old_place):
+    def set_empty(self, old_cell: Cell):
 
-        """Очищает клетку на карте"""
+        """Устанавливает пустую клетку на карте"""
 
-        self.map[old_place[0], old_place[1]] = Empty()
+        self.map[old_cell.x, old_cell.y] = Empty()
 
-    def find_entity_cells(self, cls):
+    def find_objects(self, cls):
 
-        """Ищет клетки, занятые указанным видом сущностей"""
+        """Ищет указанный вид объектов на карте"""
 
-        return [position for position, entity in self.map.items()
-                if isinstance(entity, cls)]
+        return [position for position, object in self.map.items()
+                if isinstance(object, cls)]
 
-    def show_entities(self):
+    def get_cls(self, x, y):
 
-        """Выводит карту на экран"""
+        """Ищет указанный вид объектов на карте"""
 
-        [print(' '.ljust(2) + str(i).center(3)+"\t", end='') for i in range(1, self.width + 1)]
-        print()
-        for i in range(1, self.height+1):
-            for j in range(1, self.width+1):
-                if j == 1:
-                    print(str(i).ljust(2), self.map[i, j].show() + "\t", end='', sep='')
-                else:
-                    print(' '.ljust(2), self.map[i, j].show() + "\t", end='', sep='')
-            print()
+        return type(self.map[x, y])

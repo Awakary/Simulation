@@ -1,5 +1,5 @@
-import random
 from abc import ABC
+from cell import Cell
 
 
 class Entity(ABC):
@@ -37,16 +37,6 @@ class Rock(Entity):
         return '🗻'
 
 
-class Empty(Entity):
-
-    """ Класс пустой клетки"""
-
-    name = 'Пустая клетка'
-
-    def show(self):
-        return '⬛'
-
-
 class Tree(Entity):
 
     """Класс дерева"""
@@ -63,30 +53,20 @@ class Creature(Entity):
 
     def __init__(self, x: int, y: int, hungry: int, hp: int) -> None:
         super().__init__(x, y)
-        self.hungry = hungry
-        self.hp = hp
+        self._hungry = hungry
+        self._hp = hp
 
-    def make_move(self, name, food, world, logs):
+    def make_move(self, *args):
 
         """Передвижение животного"""
 
-        old_place = self.x, self.y
-        if self.hungry < 3:
-            self.x, self.y = random.choice((world.find_entity_cells(food)))
-            self.hungry += 3
-            logs.append(f'{name} {old_place} съел(а) ресурс на клетке {self.x, self.y}')
-
-        else:
-            self.x, self.y = random.choice((world.find_entity_cells(Empty)))
-            self.hungry -= 1
-            logs.append(f'{name} с клетки {old_place} перешeл(шла) на клетку {self.x, self.y}')
-        world.clear_cell(old_place)
-
-    def disappeared(self, world, logs):
-
-        """Исчезновение животного"""
-
         pass
+
+    # def _disappeared(self, world, logs):
+    #
+    #     """Исчезновение животного"""
+    #
+    #     pass
 
 
 class Herbivore(Creature):
@@ -96,14 +76,41 @@ class Herbivore(Creature):
     name = 'Заяц'
     food = Grass
 
-    def __init__(self, x: int, y: int, hungry: int = 5, hp: int = 3) -> None:
+    def __init__(self, x: int, y: int, hungry: int = 4, hp: int = 3) -> None:
         super().__init__(x, y, hungry, hp)
 
     def show(self):
         return '🐰'
 
-    def disappeared(self, world, logs):
-        world.clear_cell((self.x, self.y))
+    def make_move(self, name, food, world, path, logs):
+        if self._hp == 0:
+            self._disappeared(world, logs)
+        else:
+            old_cell = Cell(self.x, self.y)
+            if self._hungry < 2:
+                self.x, self.y = path.bfs(self, food=True)
+                self._hungry += 2
+                logs.append(f'{name} {old_cell.x, old_cell.y} съел(а) ресурс на клетке {self.x, self.y}')
+
+            else:
+                self.x, self.y = path.bfs(self, food=False)
+                self._hungry -= 1
+                logs.append(f'{name} с клетки {old_cell.x, old_cell.y} перешeл(шла) на клетку {self.x, self.y}')
+            world.set_empty(old_cell)
+            world.set_object(self)
+
+    def lost_hp(self, logs):
+
+        """Уменьшение здоровья"""
+
+        self._hp -= 1
+        logs.append(f'{self.name} на клетке {self.x, self.y} потерял 1 hp от здоровья')
+
+    def _disappeared(self, world, logs):
+
+        """Исчезновение животного"""
+
+        world.set_empty(Cell(self.x, self.y))
         logs.append(f'{self.name} c клетки {self.x, self.y} исчез(hp стал равным 0)')
 
 
@@ -116,8 +123,8 @@ class Predator(Creature):
 
     def __init__(self, x: int, y: int, hungry: int = 5, hp: int = 3) -> None:
         super().__init__(x, y, hungry, hp)
-        self.hungry = hungry
-        self.hp = hp
+        self._hungry = hungry
+        self._hp = hp
 
     def show(self):
         return '🦊'
@@ -126,8 +133,23 @@ class Predator(Creature):
 
         """Укус травоядного(хищник кусает травоядное на всех соседних клетках)"""
 
-        herbivore_cells = world.find_entity_cells(Herbivore)
+        herbivore_cells = world.find_objects(Herbivore)
         for x, y in herbivore_cells:
-            if abs(self.x - x) <= 1 and abs(self.y - y) <= 1:
-                world.map[x, y].hp -= 1
-                logs.append(f'{world.map[x, y].name} на клетке {x, y} потерял 1 hp от здоровья')
+            if abs(self.x - x) in [0, 1] and abs(self.y - y) in [0, 1]:
+                herbivore = world.map[x, y]
+                herbivore.lost_hp(logs)
+
+    def make_move(self, name, food, world, path, logs):
+        old_cell = Cell(self.x, self.y)
+        if self._hungry < 3:
+            self.x, self.y = path.bfs(self, food=True)
+            self._hungry += 3
+            logs.append(f'{name} {old_cell.x, old_cell.y} съел(а) ресурс на клетке {self.x, self.y}')
+
+        else:
+            self.x, self.y = path.bfs(self, food=False)
+            self._hungry -= 1
+            logs.append(f'{name} с клетки {old_cell.x, old_cell.y} перешeл(шла) на клетку {self.x, self.y}')
+        world.set_empty(old_cell)
+        world.set_object(self)
+        self.attack(world, logs)

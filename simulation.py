@@ -1,7 +1,8 @@
 import time
+import threading
 from actions import Actions
 from map import Map
-from validators import validate_commands
+from render import Render
 
 
 class Simulation:
@@ -9,53 +10,41 @@ class Simulation:
     """Класс симуляции мира"""
 
     def __init__(self, width: int, height: int, show_logs: bool = False) -> None:
-        self.world_map = Map(width, height)
-        self.show_logs = show_logs
-        self.actions = Actions(self.world_map)
-        self.actions.init_actions()
-        self.count = 0
+        self._world_map = Map(width, height)
+        self._show_logs = show_logs
+        self._actions = Actions(self._world_map)
+        self._actions.init_actions()
+        self._count = 0
 
-    def next_turn(self):
+    def _next_turn(self):
 
         """Симулируется и рендерится один ход"""
 
-        self.actions.turn_actions()
-        self.count += 1
-        self.render()
-        print('Проведенное количество ходов - ', self.count)
+        self._actions.turn_actions()
+        self._count += 1
+        self._render()
+        print('Проведенное количество ходов - ', self._count)
         print()
-        self.actions.logs = []
+        self._actions.logs = []
         time.sleep(2)
 
-    def render(self):
+    def _render(self):
 
         """Рендер xодd"""
 
-        self.world_map.show_entities()
-        if self.show_logs:
-            print(*self.actions.logs, sep='\n')
+        Render.show_objects(self._world_map)
+        if self._show_logs:
+            print(*self._actions.logs, sep='\n')
 
     def start_simulation(self):
 
         """Запуск бесконечого цикла симуляции и рендеринга"""
 
-        count_moves = 10
-        while True:
-            for i in range(count_moves):
-                self.next_turn()
-            if Simulation.pause_simulation():
-                self.count = 0
-                print('Симуляция завершена')
-                break
+        def loop(user_input, time=0.5):
+            while not user_input.wait(time):
+                self._next_turn()
 
-    @staticmethod
-    def pause_simulation():
-
-        """Приостановка бесконечного цикла симуляции и рендеринга"""
-
-        while True:
-            answer = validate_commands(input('Остановить симуляцию? 1 - да, 2 - нет  '))
-            if answer == '1':
-                return True
-            if answer == '2':
-                return False
+        user_input = threading.Event()
+        threading.Thread(target=loop, args=[user_input], daemon=True).start()
+        input('Нажмите Enter для остановки симуляции')
+        user_input.set()
